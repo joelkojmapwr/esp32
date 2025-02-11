@@ -20,8 +20,8 @@
 #define secondsToMicroSeconds 1000000
 
 
-RTC_DATA_ATTR const char* wifi_ssid = "PLAY_Swiatlowodowy_179A";
-RTC_DATA_ATTR const char* wifi_password = "WaXcRcLuGj";
+String wifi_ssid;
+String wifi_password;
 RTC_DATA_ATTR const char* apiHost = "srv77343.seohost.com.pl";  // Replace with your API domain
 RTC_DATA_ATTR const int apiPort = 443;
 
@@ -106,9 +106,11 @@ void postSensorReads() {
 
   Serial.printf("Temp is %f and humidity is %f\n", t, h);  
   String body = "{\"beeViceId\": 1, \"sensorType\": 1, \"value\": " + String(t) + "}";
-  newRequest("POST /sensorReads", body);
+  String response = newRequest("POST /sensorReads", body);
+  Serial.print(response);
   body = "{\"beeViceId\": 1, \"sensorType\": 2, \"value\": " + String(h) + "}";
-  newRequest("POST /sensorReads", body);
+  response = newRequest("POST /sensorReads", body);
+  Serial.print(response);
 }
 
 void print_wakeup_touchpad() {
@@ -194,6 +196,24 @@ void setup() {
     wakeUpSeconds[1] = 60 * 60 * 14;
     wakeUpTableLength = 2;
   }
+
+  if (!SD.begin(SD_CS_PIN)) {
+    Serial.println("SD card initialization failed!");
+    return;
+  }
+  Serial.println("SD card initialized.");
+
+  File config = SD.open("/config/wifi.txt", FILE_READ);
+  if (!config) {
+    logError("faile to open file from SD card");
+  } else {
+    wifi_ssid = config.readStringUntil('\n');
+    wifi_ssid.trim();
+    wifi_password = config.readStringUntil('\n');
+    wifi_password.trim();
+  }
+  config.close();
+
   afterWakeUpSetup();
 
   print_wakeup_reason();
